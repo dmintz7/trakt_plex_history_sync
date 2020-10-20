@@ -60,7 +60,7 @@ def update_plex_times():
 		os.system("service plexmediaserver stop")
 
 		logger.info("Updating Watched Time in Plex Database - %s Records" % len(results))
-		conn = sqlite3.connect(config.path_to_db)
+		conn = sqlite3.connect(config.path_to_plex_db)
 		cursor = conn.cursor()
 		for plex_id, watched_at in results:
 			insert_query = "UPDATE metadata_item_views SET viewed_at = '%s' WHERE id = '%s'" % (watched_at.strftime("%Y-%m-%d %H:%M:%S"), plex_id)
