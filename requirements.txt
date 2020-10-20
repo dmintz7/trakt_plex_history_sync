@@ -1,0 +1,2 @@
+PlexAPI==3.2.0
+PyMySQL==0.9.3

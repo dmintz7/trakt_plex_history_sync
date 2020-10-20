@@ -1,5 +1,4 @@
-import sqlite3, main, shutil, config, logging, pytz, pymysql, os
-from datetime import datetime
+import sqlite3, main, config, logging, pymysql, os
 from plexapi.server import PlexServer
 
 logger = logging.getLogger('root')
