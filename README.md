@@ -1,4 +1,4 @@
-#trakt_plex_history_sync
+# trakt_plex_history_sync
 
 Requirements
 * Python3
