@@ -40,7 +40,7 @@ def addWatched():
 		elif section.TYPE in ('show'):
 			all = all + section.searchEpisodes()
 	
-	results = main.mysql_select("SELECT * FROM (SELECT id, concat('imdb://',imdb, '?'), concat('themoviedb://',tmdb, '?'), watched_at from trakt_movies UNION SELECT id, concat('thetvdb://',showTVDB, '/', seasonNumber, '/', episodeNumber, '?'), concat('themoviedb://',showTMDB, '/', seasonNumber, '/', episodeNumber, '?'), watched_at from trakt_episodes) tmp where id not in (select trakt_id from compare) and id not in (SELECT trakt_id FROM plex_trakt_match where trakt_id is not null)")
+	results = main.mysql_select("SELECT * FROM (SELECT id, concat('imdb://',imdb, '?'), concat('themoviedb://',tmdb, '?'), watched_at from trakt_movies UNION SELECT id, concat('thetvdb://',showTVDB, '/', seasonNumber, '/', episodeNumber, '?'), concat('themoviedb://',showTMDB, '/', seasonNumber, '/', episodeNumber, '?'), watched_at from trakt_episodes where showTVDB not in (SELECT TVDB FROM ignore_shows WHERE enable = 1)) tmp where id not in (select trakt_id from compare) and id not in (SELECT trakt_id FROM plex_trakt_match where trakt_id is not null and plex_id not in (select plex_id from compare))")
 	if len(results) > 0:
 		updated_count = 0
 		logger.info("Adding New Records in Plex Database - %s Records" % len(results))
@@ -70,7 +70,7 @@ def update_plex_times():
 		cursor.close()
 		conn.close()
 		
-		logger.info("Removing New Records in Plex Database with No Matches")
+		logger.info("Removing Records in Plex Database with No Matches")
 		plex_ids = str([x for x, y in main.mysql_select("select plex_id, trakt_id from compare")]).replace('[', '(').replace(']', ')')
 		main.plex_insert("DELETE FROM metadata_item_views where account_id = 1 and library_section_id in (1,2) and id not in %s;" % plex_ids)
 		main.plex_insert("DELETE FROM metadata_item_settings WHERE account_id = 1 and (account_id, guid) not in (SELECT account_id, guid FROM metadata_item_views)")

@@ -78,13 +78,24 @@ def initialize_database():
 		logger.info("Create Database")
 		mysql_insert("CREATE DATABASE %s" % config.dbname)
 
-		logger.info("Create Tables")
-		mysql_insert("CREATE TABLE `compare` ( `id` int NOT NULL AUTO_INCREMENT, `trakt_id` bigint unsigned DEFAULT NULL, `plex_id` bigint unsigned DEFAULT NULL, `date_added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`), UNIQUE KEY `trakt_id_UN` (`trakt_id`), UNIQUE KEY `plex_id_UN` (`plex_id`) ) ENGINE=InnoDB AUTO_INCREMENT=763820 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
+	conn = pymysql.connect(host=config.host, port=config.port, user=config.user, password=config.passwd, database=config.dbname)
+	cursor = conn.cursor()
+	cursor.execute("SHOW TABLES")
+	tables = str(cursor.fetchall())
+	if not 'compare' in tables:
+		logger.info("Create Compare Tables")
+		mysql_insert("CREATE TABLE `compare` ( `id` int NOT NULL AUTO_INCREMENT, `trakt_id` bigint unsigned DEFAULT NULL, `plex_id` bigint unsigned DEFAULT NULL, `date_added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`), UNIQUE KEY `trakt_id_UN` (`trakt_id`), UNIQUE KEY `plex_id_UN` (`plex_id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
+	if not 'plex_views' in tables:
+		logger.info("Create plex_views Tables")
 		mysql_insert("CREATE TABLE `plex_views` ( `id` int NOT NULL, `account_id` int DEFAULT NULL, `guid` varchar(255) DEFAULT NULL, `metadata_type` int DEFAULT NULL, `library_section_id` int DEFAULT NULL, `grandparent_title` varchar(255) DEFAULT NULL, `parent_index` int DEFAULT NULL, `parent_title` varchar(255) DEFAULT NULL, `index` int DEFAULT NULL, `title` varchar(255) DEFAULT NULL, `thumb_url` varchar(255) DEFAULT NULL, `viewed_at` datetime DEFAULT NULL, `grandparent_guid` varchar(255) DEFAULT NULL, `originally_available_at` datetime DEFAULT NULL, `device_id` int DEFAULT NULL, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
+	if not 'trakt_episodes' in tables:
+		logger.info("Create trakt_episodes Tables")
 		mysql_insert("CREATE TABLE `trakt_episodes` ( `id` bigint unsigned NOT NULL, `showTitle` text, `showYear` int DEFAULT NULL, `seasonNumber` int DEFAULT NULL, `episodeNumber` int DEFAULT NULL, `episodeTitle` text, `showTrakt` varchar(100) DEFAULT NULL, `showSlug` text, `showTVDB` varchar(100) DEFAULT NULL, `showIMDB` varchar(100) DEFAULT NULL, `showTMDB` varchar(100) DEFAULT NULL, `showTVRage` varchar(100) DEFAULT NULL, `episodeTrakt` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL, `episodeTVDB` varchar(100) DEFAULT NULL, `episodeIMDB` varchar(100) DEFAULT NULL, `episodeTMDB` varchar(100) DEFAULT NULL, `episodeTVRage` varchar(100) DEFAULT NULL, `watched_at` datetime DEFAULT NULL, `date_added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
+	if not 'trakt_movies' in tables:
+		logger.info("Create trakt_movies Tables")
 		mysql_insert("CREATE TABLE `trakt_movies` ( `id` bigint unsigned NOT NULL, `title` text, `year` int DEFAULT NULL, `tmdb` varchar(100) DEFAULT NULL, `imdb` varchar(100) DEFAULT NULL, `slug` text, `trakt` varchar(100) DEFAULT NULL, `watched_at` datetime DEFAULT NULL, `date_added` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (`id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;")
-
-		logger.info("Create View")
+	if not 'plex_trakt_match' in tables:
+		logger.info("Create plex_trakt_match View")
 		mysql_insert("CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW `plex_trakt_match` AS select pv.guid AS guid, ifnull(ifnull(movies_imdb.id, movies_tmdb.id), ifnull(episodes_tmdb.id, episodes_tvdb.id)) AS trakt_id, pv.id AS plex_id, ifnull(ifnull(movies_imdb.imdb, movies_tmdb.tmdb), ifnull(episodes_tvdb.showTVDB, episodes_tmdb.showTMDB)) AS web_id, pv.grandparent_title AS grandparent_title, pv.title AS title, ifnull(episodes_tvdb.seasonNumber, episodes_tmdb.seasonNumber) AS seasonNumber, ifnull(episodes_tvdb.episodeNumber, episodes_tmdb.episodeNumber) AS episodeNumber, pv.viewed_at AS plex_view, convert_tz(ifnull(ifnull(movies_imdb.watched_at, movies_tmdb.watched_at), ifnull(episodes_tvdb.watched_at, episodes_tmdb.watched_at)), 'UTC', 'America/New_York') AS trakt_view, timestampdiff(SECOND, pv.viewed_at, convert_tz(ifnull(ifnull(movies_imdb.watched_at, movies_tmdb.watched_at), ifnull(episodes_tvdb.watched_at, episodes_tmdb.watched_at)), 'UTC', 'America/New_York')) AS time_diff from plex_views pv left join trakt_movies movies_imdb on (substr(substring_index(pv.guid, '//', 1), 20) = 'imdb:' and movies_imdb.imdb = substr(substring_index(pv.guid, '?', 1),(22 + length(substr(substring_index(pv.guid, '//', 1), 20))))) left join trakt_movies movies_tmdb on (substr(substring_index(pv.guid, '//', 1), 20) = 'themoviedb:' and movies_tmdb.tmdb = substr(substring_index(pv.guid, '?', 1),(22 + length(substr(substring_index(pv.guid, '//', 1), 20))))) left join trakt_episodes episodes_tvdb on (substr(substring_index(pv.guid, '//', 1), 20) = 'thetvdb:'and concat(episodes_tvdb.showTVDB, '/', episodes_tvdb.seasonNumber, '/', episodes_tvdb.episodeNumber) = substr(substring_index(pv.guid, '?', 1),(22 + length(substr(substring_index(pv.guid, '//', 1), 20))))) left join trakt_episodes episodes_tmdb on (substr(substring_index(pv.guid, '//', 1), 20) = 'themoviedb:' and concat(episodes_tmdb.showTMDB, '/', episodes_tmdb.seasonNumber, '/', episodes_tmdb.episodeNumber) = substr(substring_index(pv.guid, '?', 1),(22 + length(substr(substring_index(pv.guid, '//', 1), 20)))));")
 	cursor.close()
 	conn.close()

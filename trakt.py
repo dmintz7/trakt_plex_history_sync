@@ -41,7 +41,7 @@ class TraktImporter(object):
 
 	@staticmethod
 	def __delete_token_cache():
-		os.remove("t_token")
+		os.remove(os.path.join(os.path.dirname(os.path.abspath(__file__)), "t_token"))
 
 	def __generate_device_code(self):
 		""" Generates a device code for authentication within Trakt. """
@@ -112,8 +112,9 @@ class TraktImporter(object):
 						extracted_movies+=json.loads(response_body)
 				except HTTPError as err:
 					if err.code == 401 or err.code == 403:
-						logger.error("Auth Token has expired.")
-						self.__delete_token_cache() # This will regenerate token on next run.
+						logger.error("Auth Token has expired. Run Again to Reauthenticate.")
+						self.__delete_token_cache()
+						exit()
 					logger.error("{0} An error occured.".format(err.code))
 					time.sleep(5)
 				else:
@@ -153,8 +154,9 @@ class TraktImporter(object):
 						extracted_episodes+=json.loads(response_body)
 				except HTTPError as err:
 					if err.code == 401 or err.code == 403:
-						logger.error("Auth Token has expired.")
-						self.__delete_token_cache() # This will regenerate token on next run.
+						logger.error("Auth Token has expired. Run Again to Reauthenticate.")
+						self.__delete_token_cache()
+						exit()
 					logger.error("{0} An error occured.".format(err.code))
 					time.sleep(5)
 				else:
